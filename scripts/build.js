@@ -66,9 +66,9 @@ async function processWithGemini(articles) {
     return fallbackProcess(articles);
   }
 
-  console.log('[Gemini] Gemini API で記事の日本語翻訳・3行要約・注目度評価を実行中...');
+  console.log(`[Gemini] GEMINI_API_KEY を検出しました (キー長: ${GEMINI_API_KEY.trim().length})。記事の日本語翻訳・3行要約・注目度評価を実行中...`);
 
-  // 1回のリクエストでまとめて処理
+  // 処理対象の記事（最大30件）
   const articlesForPrompt = articles.slice(0, 30).map((a, idx) => ({
     index: idx,
     id: a.id,
@@ -79,18 +79,19 @@ async function processWithGemini(articles) {
 
   const prompt = `
 あなたはプロのAI・ITテックニュース編集長です。
-以下の${articlesForPrompt.length}件のニュース記事を分析し、JSON形式で返答してください。
+以下の${articlesForPrompt.length}件のニュース記事を日本語で分析・要約し、必ず指定のJSON配列フォーマットのみで返答してください。
 
-【各記事に対する処理内容】
-1. titleJa: 日本語タイトル（海外記事は分かりやすく魅力的な日本語に翻訳、国内記事はそのままかより洗練）
-2. points: サクッと読める重要なポイント・要約を3点（箇条書き、各行50文字以内）
-3. stars: ニュースの重要度・注目度（1〜5の数値。画期的な発表や大型モデル発表は5、一般的なニュースは3〜4）
-4. isTop10: 本日の全記事の中から特に通勤中・朝に読むべき「超注目ニュース10選」に該当する場合はtrue、それ以外はfalse（trueは全体で必ず10件選定してください）
+【重要な要件】
+1. titleJa: 必ず自然で魅力的な日本語に翻訳・整形してください（英語タイトルの記事は必ず日本語に翻訳してください）。
+2. points: サクッと読める重要なポイント・要約を3点（日本語の箇条書き配列、各項目40〜60文字程度）。
+3. stars: ニュースの重要度・注目度（1〜5の整数。大型モデル発表や画期的ニュースは5、注目記事は4、一般的なニュースは3）。
+4. isTop10: 本日の記事全体の中から、特に朝に読むべき「超注目ニュース10選」に該当する場合はtrue、それ以外はfalse（trueは全体で必ず10件選定してください）。
 
 【入力記事一覧】
 ${JSON.stringify(articlesForPrompt, null, 2)}
 
-【返答フォーマット（JSON配列のみを出力してください。マークダウンの\`\`\`json等の記号は含めないでください）】
+【返答フォーマット】
+マークダウン装飾（\`\`\`jsonなど）は付けず、純粋なJSON配列のみを出力してください：
 [
   {
     "index": 0,
@@ -102,31 +103,54 @@ ${JSON.stringify(articlesForPrompt, null, 2)}
 ]
 `;
 
-  try {
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          temperature: 0.3
+  // 試行するモデル候補一覧（利用可能な順）
+  const candidateModels = [
+    'gemini-1.5-flash',
+    'gemini-2.0-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro'
+  ];
+
+  let rawOutput = '';
+  for (const model of candidateModels) {
+    try {
+      console.log(`[Gemini] モデル ${model} を呼び出し中...`);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY.trim()}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            temperature: 0.3
+          }
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        rawOutput = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        if (rawOutput) {
+          console.log(`[Gemini] モデル ${model} からの応答取得に成功しました！`);
+          break;
         }
-      })
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      console.warn(`[Gemini API Error] Status: ${res.status}, Message: ${errText}`);
-      console.log('[Gemini] フォールバック処理に切り替えます。');
-      return fallbackProcess(articles);
+      } else {
+        const errText = await res.text();
+        console.warn(`[Gemini] モデル ${model} エラー (Status: ${res.status}): ${errText}`);
+      }
+    } catch (err) {
+      console.warn(`[Gemini] モデル ${model} 呼び出し例外: ${err.message}`);
     }
+  }
 
-    const data = await res.json();
-    const rawOutput = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  if (!rawOutput) {
+    console.warn('[Gemini] すべてのGeminiモデルで応答が得られませんでした。フォールバックに切り替えます。');
+    return fallbackProcess(articles);
+  }
+
+  try {
     const cleanedOutput = rawOutput.replace(/```json/g, '').replace(/```/g, '').trim();
     const analyzed = JSON.parse(cleanedOutput);
-
     const resultMap = new Map(analyzed.map(item => [item.index, item]));
 
     const processed = articles.map((a, idx) => {
@@ -149,11 +173,12 @@ ${JSON.stringify(articlesForPrompt, null, 2)}
       };
     });
 
-    console.log('[Gemini] 要約と注目度判定が完了しました！');
+    console.log('[Gemini] 日本語翻訳・要約・注目度判定の適用が完了しました！');
     return processed;
 
-  } catch (e) {
-    console.warn(`[Gemini API 呼び出しエラー]: ${e.message}`);
+  } catch (parseErr) {
+    console.warn(`[Gemini JSON解析エラー]: ${parseErr.message}`);
+    console.warn('Raw output:', rawOutput.slice(0, 300));
     return fallbackProcess(articles);
   }
 }
@@ -216,3 +241,4 @@ build().catch(err => {
   console.error('Build failed:', err);
   process.exit(1);
 });
+
