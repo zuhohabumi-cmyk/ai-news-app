@@ -105,10 +105,11 @@ ${JSON.stringify(articlesForPrompt, null, 2)}
 
   // 試行するモデル候補一覧（利用可能な順）
   const candidateModels = [
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest',
     'gemini-1.5-flash',
-    'gemini-2.0-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-pro'
+    'gemini-2.0-flash'
   ];
 
   let rawOutput = '';
