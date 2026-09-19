@@ -1,0 +1,15 @@
+{
+  "name": "ai-daily-news-app",
+  "version": "1.0.0",
+  "description": "スマホで読める毎朝自動更新の自分専用AIニュースアプリ",
+  "main": "scripts/build.js",
+  "scripts": {
+    "build": "node scripts/build.js",
+    "generate-icons": "node scripts/generate_icons.js",
+    "serve": "npx serve public"
+  },
+  "dependencies": {
+    "rss-parser": "^3.13.0",
+    "dotenv": "^16.4.5"
+  }
+}

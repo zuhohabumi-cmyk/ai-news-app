@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>最新AI系ニュースまとめ</title>
+  <meta name="description" content="毎朝自動更新される自分専用の最新AIニュースまとめ">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AIニュース">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #151d2f;
+      --surface-hover: #1e293b;
+      --border: #243048;
+      --primary: #38bdf8;
+      --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --star: #fbbf24;
+      --badge-japan: #ec4899;
+      --badge-overseas: #06b6d4;
+      --badge-paper: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    /* パスコード ロック画面 */
+    #lock-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 15, 25, 0.98);
+      backdrop-filter: blur(12px);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .lock-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .lock-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+
+    .lock-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .lock-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .pin-display {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      transition: all 0.2s;
+    }
+
+    .pin-dot.filled {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 0 12px var(--primary);
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+
+    .key-btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, transform 0.1s;
+    }
+
+    .key-btn:active {
+      background: var(--primary);
+      color: #0b0f19;
+      transform: scale(0.92);
+    }
+
+    .shake {
+      animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    /* ヘッダー */
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(11, 15, 25, 0.92);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 800;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .update-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* 横スクロールタブバー */
+    .tabs-container {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0 2px 0;
+      scrollbar-width: none;
+    }
+
+    .tabs-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary-gradient);
+      color: #0b0f19;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+    }
+
+    .badge-count {
+      background: rgba(0, 0, 0, 0.25);
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+    .tab-btn.active .badge-count {
+      background: rgba(0, 0, 0, 0.35);
+      color: #fff;
+    }
+
+    /* メインコンテンツ */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .news-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      position: relative;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .news-card:hover {
+      border-color: #38bdf8;
+    }
+
+    .news-card.read {
+      opacity: 0.65;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .meta-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .source-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .cat-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .cat-badge.国内 {
+      background: rgba(236, 72, 153, 0.15);
+      color: var(--badge-japan);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+
+    .cat-badge.海外 {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--badge-overseas);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .cat-badge.論文 {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--badge-paper);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .stars {
+      color: var(--star);
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    .news-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .news-title a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .news-title a:hover {
+      color: var(--primary);
+    }
+
+    .summary-box {
+      background: rgba(11, 15, 25, 0.6);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .summary-box ul {
+      padding-left: 18px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 6px;
+    }
+
+    .news-date {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .read-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .read-toggle-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .news-card.read .read-toggle-btn {
+      border-color: #10b981;
+      color: #10b981;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    /* スナックバー / 通知 */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      z-index: 1000;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- パスコード ロック画面 (動画の仕様を再現) -->
+  <div id="lock-screen">
+    <div class="lock-box" id="lock-box">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">最新AI系ニュースまとめ</div>
+      <div class="lock-desc">4桁のパスコードを入力してください</div>
+      
+      <div class="pin-display">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+
+      <div class="keypad">
+        <button class="key-btn" onclick="inputDigit('1')">1</button>
+        <button class="key-btn" onclick="inputDigit('2')">2</button>
+        <button class="key-btn" onclick="inputDigit('3')">3</button>
+        <button class="key-btn" onclick="inputDigit('4')">4</button>
+        <button class="key-btn" onclick="inputDigit('5')">5</button>
+        <button class="key-btn" onclick="inputDigit('6')">6</button>
+        <button class="key-btn" onclick="inputDigit('7')">7</button>
+        <button class="key-btn" onclick="inputDigit('8')">8</button>
+        <button class="key-btn" onclick="inputDigit('9')">9</button>
+        <button class="key-btn" style="font-size:14px;" onclick="clearDigits()">クリア</button>
+        <button class="key-btn" onclick="inputDigit('0')">0</button>
+        <button class="key-btn" style="font-size:18px;" onclick="deleteDigit()">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- メイン画面 -->
+  <header>
+    <div class="header-top">
+      <div class="logo-area">
+        <img src="icon-192.png" alt="Logo" class="logo-icon">
+        <div>
+          <h1>最新AI系ニュースまとめ</h1>
+          <div class="update-time">最終更新: 2026/09/19 12:31</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="lockApp()" title="ロック">🔒</button>
+        <button class="icon-btn" onclick="markAllRead()" title="すべて既読">一括既読</button>
+      </div>
+    </div>
+
+    <div class="tabs-container" id="tabs-bar">
+      <!-- JSで動的生成 -->
+    </div>
+  </header>
+
+  <main>
+    <div class="news-list" id="news-container">
+      <!-- 記事カード一覧 -->
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <!-- ニュースデータ埋め込み -->
+  <script id="news-data-json" type="application/json">
+    {"updatedAt":"2026/09/19 12:31","articles":[{"id":"aHR0cHM6Ly93d3cu","sourceId":"gizmodo","sourceName":"ギズモード・ジャパン","category":"国内","title":"Meta、カメラ非搭載のスマートグラスも発表予定？","link":"https://www.gizmodo.jp/article/meta-luna-smart-glasses-may-drastically-tone-down-the-creep-factor/","contentSnippet":"Meta Connect 2026で発表が噂されるカメラ非搭載の新型スマートグラス「Luna」の最新情報をお届け。プライバシー配慮や軽量化など、注目の特徴を分かりやすく解説します。","pubDate":"9/19 12:30","timestamp":1789788600000,"titleJa":"Meta、カメラ非搭載のスマートグラスも発表予定？","points":["Meta Connect 2026で発表が噂されるカメラ非搭載の新型スマートグラス「Luna」の最新情報をお届け。プライ...","ギズモード・ジャパン からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":5,"isTop10":true},{"id":"aHR0cHM6Ly93d3cu","sourceId":"gizmodo","sourceName":"ギズモード・ジャパン","category":"国内","title":"iOS 27.2（ベータ版）でSiri AIが日本語対応へ。早ければ来月にもやってくる","link":"https://www.gizmodo.jp/article/ios27-7-siri-ai/","contentSnippet":"iOS 27を完成させる最後の1ピース。先日公開されたiOS 27。Liquid Glassの透明度変更や、AIによる画像編集などさまざまな新機能が追加されましたが、実はまだ未完成。そう、iOS 27の目玉（たぶん）になるであろう、「Sir…","pubDate":"9/19 12:00","timestamp":1789786800000,"titleJa":"iOS 27.2（ベータ版）でSiri AIが日本語対応へ。早ければ来月にもやってくる","points":["iOS 27を完成させる最後の1ピース。先日公開されたiOS 27。Liquid Glassの透明度変更や、AIによる画...","ギズモード・ジャパン からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":5,"isTop10":true},{"id":"aHR0cHM6Ly93d3cu","sourceId":"gizmodo","sourceName":"ギズモード・ジャパン","category":"国内","title":"見えないものを見ようとして、キヤノン「EOS R10」を覗きこんで撮影してみた","link":"https://www.gizmodo.jp/article/canon-eos-r10/","contentSnippet":"日常には、肉眼では見えないほんの一瞬の出来事が多くあります。それを、カメラで撮影しようとしても、なかなかうまくいかないことも。まばたきのような瞬間を、残したい。そんな願いを叶えてくれるのが、キヤノンのミラーレス一眼「EOS R10」です。R…","pubDate":"9/19 11:00","timestamp":1789783200000,"titleJa":"見えないものを見ようとして、キヤノン「EOS R10」を覗きこんで撮影してみた","points":["日常には、肉眼では見えないほんの一瞬の出来事が多くあります。それを、カメラで撮影しようとしても、なかなかうまくいかないこ...","ギズモード・ジャパン からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":5,"isTop10":true},{"id":"aHR0cHM6Ly90ZWNo","sourceId":"techcrunch-ai","sourceName":"TechCrunch AI","category":"海外","title":"India forces caller-ID apps to feed spam reports to telcos","link":"https://techcrunch.com/2026/09/18/india-forces-caller-id-apps-to-feed-spam-reports-to-telcos/","contentSnippet":"Truecaller says the one-way sharing requirement would hand a commercially valuable proprietary asset to telecom operators.","pubDate":"9/19 10:00","timestamp":1789779600000,"titleJa":"India forces caller-ID apps to feed spam reports to telcos","points":["Truecaller says the one-way sharing requirement would hand a...","TechCrunch AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":5,"isTop10":true},{"id":"aHR0cHM6Ly90ZWNo","sourceId":"techcrunch-ai","sourceName":"TechCrunch AI","category":"海外","title":"Tilly Norwood’s press tour is going about as well as you’d expect for an AI","link":"https://techcrunch.com/2026/09/18/tilly-norwoods-press-tour-is-going-about-as-well-as-youd-expect-for-an-ai/","contentSnippet":"In one particularly odd interview, Norwood seems to malfunction and begin speaking Chinese.","pubDate":"9/19 09:12","timestamp":1789776727000,"titleJa":"Tilly Norwood’s press tour is going about as well as you’d expect for an AI","points":["In one particularly odd interview, Norwood seems to malfunct...","TechCrunch AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":5,"isTop10":true},{"id":"aHR0cHM6Ly93d3cu","sourceId":"gizmodo","sourceName":"ギズモード・ジャパン","category":"国内","title":"iPhone 18 Pro/Pro Maxのカメラ新機能「レンズ絞り」と「シャッタースピード」を試してみたよ","link":"https://www.gizmodo.jp/article/iphone-18-pro-camera-features/","contentSnippet":"結構効果あったかも。iPhone 18 Pro/Pro Maxのカメラに、可変絞り機能が搭載されました。「絞り」ってなんぞや？ってことなんですが、レンズを通る光の量を調整する機構のこと。数枚の羽根が円形に配置されていて、その大きさを変更する…","pubDate":"9/19 09:00","timestamp":1789776000000,"titleJa":"iPhone 18 Pro/Pro Maxのカメラ新機能「レンズ絞り」と「シャッタースピード」を試してみたよ","points":["結構効果あったかも。iPhone 18 Pro/Pro Maxのカメラに、可変絞り機能が搭載されました。「絞り」ってなん...","ギズモード・ジャパン からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":true},{"id":"aHR0cHM6Ly96ZW5u","sourceId":"zenn-ai","sourceName":"Zenn (AI)","category":"国内","title":"59. なぜルールは発火しないのか","link":"https://zenn.dev/yamada_ai_dev/articles/why-rules-never-fire","contentSnippet":"!\nこの記事は生成AIで作成した草稿を、筆者が内容を確認し、添削・修正のうえ公開しています。\n\n\n なぜルールは発火しないのか\nAIコーディングエージェントに運用ルールを書いた。ユーザーに確認・質問するときは、2〜4個の選択肢を提示すること。趣旨はそれだけだ。この規則は毎ターン、必ずコンテキストに入っている。設定ファイルの中でも上のほうに書いてあり、読み落としようがない場所にある。\nそれでも破られた。しかも1日のうちに5回続けて起きている。最後にはユーザーから「根本的にどうやったら解決できるの」と聞かれるところまでいった。\n破られた応答を見返すと、どれも共通点があった。疑問符が一つも入っ...","pubDate":"9/19 08:30","timestamp":1789774210000,"titleJa":"59. なぜルールは発火しないのか","points":["!\nこの記事は生成AIで作成した草稿を、筆者が内容を確認し、添削・修正のうえ公開しています。\n\n\n なぜルールは発火しな...","Zenn (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":true},{"id":"aHR0cHM6Ly90ZWNo","sourceId":"techcrunch-ai","sourceName":"TechCrunch AI","category":"海外","title":"A startup that builds other startups raised $100M and is all-in on physical AI","link":"https://techcrunch.com/2026/09/18/a-startup-that-builds-other-startups-raised-100m-and-is-all-in-on-physical-ai/","contentSnippet":"UP.Labs, now doing business under the name Vantora, is building startups for industrial corporations.","pubDate":"9/19 08:25","timestamp":1789773901000,"titleJa":"A startup that builds other startups raised $100M and is all-in on physical AI","points":["UP.Labs, now doing business under the name Vantora, is build...","TechCrunch AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":true},{"id":"aHR0cHM6Ly90ZWNo","sourceId":"techcrunch-ai","sourceName":"TechCrunch AI","category":"海外","title":"Anthropic is operating a lab that conducts biology experiments","link":"https://techcrunch.com/2026/09/18/anthropic-is-operating-a-lab-that-conducts-biology-experiments/","contentSnippet":"AI leaders have been promising that AI is the key to curing human disease. Anthropic researchers have also been warning that AI might kill us all.","pubDate":"9/19 08:13","timestamp":1789773211000,"titleJa":"Anthropic is operating a lab that conducts biology experiments","points":["AI leaders have been promising that AI is the key to curing ...","TechCrunch AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":true},{"id":"aHR0cHM6Ly96ZW5u","sourceId":"zenn-ai","sourceName":"Zenn (AI)","category":"国内","title":"AI時代のエンジニア採用基準はどう変わったか","link":"https://zenn.dev/sunsun_eng/articles/ai-era-engineer-hiring-criteria","contentSnippet":"AI時代のエンジニア採用基準はどう変わったか\nこの記事の要点\n\nAI時代のエンジニア採用では、コードを速く書く力より「何を作るべきか」を言語化する力が重視される傾向にあります。\nChatGPTやGitHub Copilotなどの生成AIツールは、基礎的なプログラミング知識がないと正しく使いこなせないため、基礎力の重要性は下がっていません。\n未経験やキャリアチェンジからエンジニアを目指す場合は、AIツールを使って自分で作った成果物を見せることが、採用担当者への説得材料になります。\n\n「AI時代 エンジニア採用」というキーワードで検索する人が増えています。きっかけの一つが、元ヤフーのエン...","pubDate":"9/19 08:09","timestamp":1789772978000,"titleJa":"AI時代のエンジニア採用基準はどう変わったか","points":["AI時代のエンジニア採用基準はどう変わったか\nこの記事の要点\n\nAI時代のエンジニア採用では、コードを速く書く力より「何...","Zenn (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":true},{"id":"aHR0cHM6Ly96ZW5u","sourceId":"zenn-ai","sourceName":"Zenn (AI)","category":"国内","title":"OpenAIが「モデルの不整合」を定期開示する仕組みを作った ― 開示フレームワークの意思決定フローを読み解く","link":"https://zenn.dev/tashikani/articles/openai-misalignment-disclosure-2026","contentSnippet":"2026年9月16日、OpenAIは自社モデルの「不整合(misalignment)」事例を追跡・調査・開示するための新しいフレームワークを公表し、同時にこの半年間に観測した具体的な不整合事例6件のレポートを公開しました。今回のポイントは単なる事例紹介ではなく、「何を、どのようなプロセスで、どこまで開示するか」を定めた運用フレームワーク自体が公開された点です。本稿ではOpenAI公式ブログおよび個別レポートページを横断的に確認し、この開示プロセスの構造を図解と表で整理します。\n\n なぜこのフレームワークが必要だったのか\nOpenAIは、これまでも不整合に関する知見(scheming行動の...","pubDate":"9/19 08:08","timestamp":1789772931000,"titleJa":"OpenAIが「モデルの不整合」を定期開示する仕組みを作った ― 開示フレームワークの意思決定フローを読み解く","points":["2026年9月16日、OpenAIは自社モデルの「不整合(misalignment)」事例を追跡・調査・開示するための新...","Zenn (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":false},{"id":"aHR0cHM6Ly96ZW5u","sourceId":"zenn-ai","sourceName":"Zenn (AI)","category":"国内","title":"外注ゼロでLPを1日で作る — AI制作フローと公開前チェックリスト","link":"https://zenn.dev/joinclass/articles/lp-1-ai-20260810220003-17321","contentSnippet":"「LP1枚に30万円と3週間」はもう払わなくていい\n僕は一人で会社を回している。プロダクトは3事業、SNS配信は9プロダクト分、記事は3チャネル/日。この規模で回すのに、LP1枚のたびに制作会社へ見積もりを取って3週間待つ余裕はない。\n以前、当社はHPリニューアル営業をやっていた。21社を分析して提案書まで作った。だが結局1件も決まらず、事業ごと廃止した。理由は単純で、AIの進化でHP制作のハードルが下がり、その事業の価値が消えたからだ。自分たちが「作って売る側」で価値を失ったなら、逆に「自分で作る側」ではコストがゼロに近づいたということでもある。\nいまLPは、企画から公開まで1日で...","pubDate":"9/19 08:00","timestamp":1789772410000,"titleJa":"外注ゼロでLPを1日で作る — AI制作フローと公開前チェックリスト","points":["「LP1枚に30万円と3週間」はもう払わなくていい\n僕は一人で会社を回している。プロダクトは3事業、SNS配信は9プロダ...","Zenn (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"itmedia-ai","sourceName":"ITmedia AI+","category":"国内","title":"パナソニック・サムスン撤退の裏で「中国勢5割」　独IT見本市「IFA」トップが明かす舞台裏","link":"https://www.itmedia.co.jp/business/articles/2609/19/news010.html","contentSnippet":"出展2000社超の過半数が中国勢、そして長年メイン会場の“顔”だったサムスン電子の電撃的な撤退──。欧州最大の家電見本市「IFA」の会場には、中国勢の巨大ブースと50モデルものヒューマノイドなど地殻変動の熱気が渦巻いていた。主役の交代と「脱・家電」シフトが加速する中、IFA運営トップのライフ・リントナーCEOを現地ベルリンで単独直撃。サムスン離脱の本当の理由から、パナソニックがブースを壁で覆った真相など、グローバルハイテク市場の今に迫る。","pubDate":"9/19 08:00","timestamp":1789772400000,"titleJa":"パナソニック・サムスン撤退の裏で「中国勢5割」　独IT見本市「IFA」トップが明かす舞台裏","points":["出展2000社超の過半数が中国勢、そして長年メイン会場の“顔”だったサムスン電子の電撃的な撤退──。欧州最大の家電見本市...","ITmedia AI+ からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":false},{"id":"aHR0cHM6Ly9rbi5p","sourceId":"itmedia-ai","sourceName":"ITmedia AI+","category":"国内","title":"「規定を探す時間」をAIで短縮　豊川信用金庫が生成AIを職員のFAQに活用","link":"https://kn.itmedia.co.jp/kn/article/2609/19/2000001616/","contentSnippet":"業務規定や商品知識など、金融機関には日々参照する情報が多い。必要な情報を探したり、詳しい職員に確認したりする時間も課題となる。ココペリは、こうした情報検索を生成AIで支援する「SAF」を豊川信用金庫に導入した。","pubDate":"9/19 07:00","timestamp":1789768800000,"titleJa":"「規定を探す時間」をAIで短縮　豊川信用金庫が生成AIを職員のFAQに活用","points":["業務規定や商品知識など、金融機関には日々参照する情報が多い。必要な情報を探したり、詳しい職員に確認したりする時間も課題と...","ITmedia AI+ からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":false},{"id":"aHR0cHM6Ly9rbi5p","sourceId":"itmedia-ai","sourceName":"ITmedia AI+","category":"国内","title":"「AIで資料は作れるけど、増えすぎた」を解消するNotebook機能とは？","link":"https://kn.itmedia.co.jp/kn/article/2609/19/2000001614/","contentSnippet":"生成AIでスライドや図解を手軽に作れるようになった一方、作成物が増えるほど「どれが何の資料か分からない」「目的の資料を探せない」といった問題が起きやすい。","pubDate":"9/19 07:00","timestamp":1789768800000,"titleJa":"「AIで資料は作れるけど、増えすぎた」を解消するNotebook機能とは？","points":["生成AIでスライドや図解を手軽に作れるようになった一方、作成物が増えるほど「どれが何の資料か分からない」「目的の資料を探...","ITmedia AI+ からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":4,"isTop10":false},{"id":"aHR0cHM6Ly9rbi5p","sourceId":"itmedia-ai","sourceName":"ITmedia AI+","category":"国内","title":"AI導入は6割、でも8割超が「チャット止まり」　業務自動化まで進まない原因は？","link":"https://kn.itmedia.co.jp/kn/article/2609/19/2000001624/","contentSnippet":"「AIを導入したが、チャットに使うだけ」。そんな中小企業は少なくない。クラウドワークスの調査では、AI利用企業の8割超がチャット利用にとどまった。業務自動化を阻む原因は何か。","pubDate":"9/19 07:00","timestamp":1789768800000,"titleJa":"AI導入は6割、でも8割超が「チャット止まり」　業務自動化まで進まない原因は？","points":["「AIを導入したが、チャットに使うだけ」。そんな中小企業は少なくない。クラウドワークスの調査では、AI利用企業の8割超が...","ITmedia AI+ からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"theverge-ai","sourceName":"The Verge AI","category":"海外","title":"OpenAI and Microsoft knew they were starting a ‘doom loop’ for the web","link":"https://www.theverge.com/ai-artificial-intelligence/997633/openai-microsoft-chatgpt-ai-new-york-times-doom-loop-theft-google-zero","contentSnippet":"Recently unsealed court documents in the New York Times' case against OpenAI and Microsoft are pretty damning. The companies' own documentation warned that it was starting a \"doom loop\" that would damage the web, characterized its scraping of data to train its models as the \"largest theft of labor i","pubDate":"9/19 06:07","timestamp":1789765644000,"titleJa":"OpenAI and Microsoft knew they were starting a ‘doom loop’ for the web","points":["Recently unsealed court documents in the New York Times' cas...","The Verge AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9hcnhp","sourceId":"hacker-news","sourceName":"Hacker News (AI)","category":"海外","title":"The Implications of Linguistic Illegibility for LLM Security","link":"https://arxiv.org/abs/2609.02852","contentSnippet":"Article URL: https://arxiv.org/abs/2609.02852\nComments URL: https://news.ycombinator.com/item?id=49758689\nPoints: 56\n# Comments: 20","pubDate":"9/19 04:00","timestamp":1789758006000,"titleJa":"The Implications of Linguistic Illegibility for LLM Security","points":["Article URL: https://arxiv.org/abs/2609.02852\nComments URL: ...","Hacker News (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"theverge-ai","sourceName":"The Verge AI","category":"海外","title":"Virginia governor creates an AI task force and moves to restrain data centers","link":"https://www.theverge.com/policy/997573/virginia-governor-spanberger-data-center-ai-task-force","contentSnippet":"Virginia Gov. Abigail Spanberger ordered the state government to take steps that could empower local communities to have a larger say in data center development and slow down approvals in a state that is already home to the data center capital of the world.\nExecutive Order 22 bans executive branch o","pubDate":"9/19 03:29","timestamp":1789756157000,"titleJa":"Virginia governor creates an AI task force and moves to restrain data centers","points":["Virginia Gov. Abigail Spanberger ordered the state governmen...","The Verge AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"hacker-news","sourceName":"Hacker News (AI)","category":"海外","title":"US Military had close call after using AI for hallucinated intelligence report","link":"https://www.cnn.com/2026/09/18/politics/us-military-ai-false-intelligence-china-ship","contentSnippet":"Article URL: https://www.cnn.com/2026/09/18/politics/us-military-ai-false-intelligence-china-ship\nComments URL: https://news.ycombinator.com/item?id=49757520\nPoints: 413\n# Comments: 317","pubDate":"9/19 02:28","timestamp":1789752481000,"titleJa":"US Military had close call after using AI for hallucinated intelligence report","points":["Article URL: https://www.cnn.com/2026/09/18/politics/us-mili...","Hacker News (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"theverge-ai","sourceName":"The Verge AI","category":"海外","title":"Gavin Newsom is pushing for an AI kill switch","link":"https://www.theverge.com/policy/997516/california-governor-newsom-ai-kill-switch","contentSnippet":"California Gov. Gavin Newsom (D) is positioning the state to take the lead on AI oversight, including the potential to mandate a \"kill switch\" for frontier models, with a new executive order issued Friday. \nNewsom's order directs the state to convene a group of experts that will deliver recommendati","pubDate":"9/19 02:04","timestamp":1789751091000,"titleJa":"Gavin Newsom is pushing for an AI kill switch","points":["California Gov. Gavin Newsom (D) is positioning the state to...","The Verge AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"theverge-ai","sourceName":"The Verge AI","category":"海外","title":"What Hollywood thinks about existential AI warnings","link":"https://www.theverge.com/ai-artificial-intelligence/997358/what-hollywood-thinks-about-existential-ai-warnings","contentSnippet":"As the tech sector sounds alarms about AI's potential to destroy humanity, entertainment labor groups are urging the public to stay focused on what's already happening. The Verge reached out to Disney, Netflix, Amazon, Lionsgate, and other studios who have started using AI, as well film startups foc","pubDate":"9/19 01:35","timestamp":1789749319000,"titleJa":"What Hollywood thinks about existential AI warnings","points":["As the tech sector sounds alarms about AI's potential to des...","The Verge AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"hacker-news","sourceName":"Hacker News (AI)","category":"海外","title":"AI is an elite crime spree","link":"https://www.thebignewsletter.com/p/ai-is-an-elite-crime-spree","contentSnippet":"Article URL: https://www.thebignewsletter.com/p/ai-is-an-elite-crime-spree\nComments URL: https://news.ycombinator.com/item?id=49755590\nPoints: 116\n# Comments: 39","pubDate":"9/19 00:15","timestamp":1789744533000,"titleJa":"AI is an elite crime spree","points":["Article URL: https://www.thebignewsletter.com/p/ai-is-an-eli...","Hacker News (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9tb250","sourceId":"hacker-news","sourceName":"Hacker News (AI)","category":"海外","title":"AI Protest in Montreal","link":"https://montrealgazette.com/news/photos-anti-ai-protest-in-montreal/","contentSnippet":"Article URL: https://montrealgazette.com/news/photos-anti-ai-protest-in-montreal/\nComments URL: https://news.ycombinator.com/item?id=49755162\nPoints: 52\n# Comments: 83","pubDate":"9/18 23:45","timestamp":1789742741000,"titleJa":"AI Protest in Montreal","points":["Article URL: https://montrealgazette.com/news/photos-anti-ai...","Hacker News (AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9ibG9n","sourceId":"google-ai","sourceName":"Google AI","category":"海外","title":"New experts join Google’s AI & Economy team","link":"https://blog.google/innovation-and-ai/technology/ai/expanding-ai-economy-research-bench/","contentSnippet":"We are expanding our AI & Economy team with world-class academic advisors, fellows, and core internal researchers.","pubDate":"9/18 23:00","timestamp":1789740000000,"titleJa":"New experts join Google’s AI & Economy team","points":["We are expanding our AI & Economy team with world-class acad...","Google AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9ibG9n","sourceId":"google-ai","sourceName":"Google AI","category":"海外","title":"Co-creating the future of fashion with Google","link":"https://blog.google/innovation-and-ai/technology/ai/google-flow-fashion-week/","contentSnippet":"Google worked side-by-side with designers Jane Wade and Sergio Hudson to custom-design Google Flow tools to prep for NYFW.","pubDate":"9/18 22:00","timestamp":1789736400000,"titleJa":"Co-creating the future of fashion with Google","points":["Google worked side-by-side with designers Jane Wade and Serg...","Google AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"mit-tech","sourceName":"MIT Tech Review","category":"論文","title":"The Download: AI’s extinction risk and bioweapons threat","link":"https://www.technologyreview.com/2026/09/18/1142577/the-download-ai-extinction-threat-bioweapons/","contentSnippet":"This is today’s edition of The Download, our weekday newsletter that provides a daily dose of what’s going on in the world of technology. Could AI really kill us all? Your questions, answered On Wednesday, MIT Technology Review hosted a live Roundtables event that asked the question many seem to be ","pubDate":"9/18 21:10","timestamp":1789733400000,"titleJa":"The Download: AI’s extinction risk and bioweapons threat","points":["This is today’s edition of The Download, our weekday newslet...","MIT Tech Review からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"mit-tech","sourceName":"MIT Tech Review","category":"論文","title":"Could AI really kill us all? Your questions, answered.","link":"https://www.technologyreview.com/2026/09/18/1144435/could-ai-really-kill-us-all-your-questions-answered/","contentSnippet":"On Wednesday, MIT Technology Review hosted a live Roundtables event for subscribers that asked the question everyone’s asking right now: Could AI really kill us all? But attendees had so many more questions than we had time to answer in the 30 minute session. So we asked our senior AI editor Will Do","pubDate":"9/18 20:29","timestamp":1789730962000,"titleJa":"Could AI really kill us all? Your questions, answered.","points":["On Wednesday, MIT Technology Review hosted a live Roundtable...","MIT Tech Review からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"mit-tech","sourceName":"MIT Tech Review","category":"論文","title":"The specter of AI-enabled bioweapons is a wake-up call for biotech","link":"https://www.technologyreview.com/2026/09/18/1144329/the-specter-of-ai-enabled-bioweapons-is-a-wake-up-call-for-biotech/","contentSnippet":"In recent weeks, leaders of some of the biggest AI companies have warned that the very tech they are developing is dangerous. Last weekend, Anthropic CEO Dario Amodei argued that AI carries serious risk and that progress should be slowed. OpenAI CEO Sam Altman responded on X: “I agree with Dario tha","pubDate":"9/18 18:00","timestamp":1789722000000,"titleJa":"The specter of AI-enabled bioweapons is a wake-up call for biotech","points":["In recent weeks, leaders of some of the biggest AI companies...","MIT Tech Review からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9hcnhp","sourceId":"arxiv-ai","sourceName":"arXiv (cs.AI)","category":"論文","title":"Regularized Emphatic Temporal-Difference Learning: Stability under Constant Stepsizes","link":"https://arxiv.org/abs/2609.19170","contentSnippet":"arXiv:2609.19170v1 Announce Type: new \nAbstract: Emphatic temporal-difference learning (ETD) stabilizes the expected off-policy TD update and changes its projection geometry, but neither property determines constant-stepsize sampled dynamics. We construct an ergodic two-state counterexample in which","pubDate":"9/18 13:00","timestamp":1789704000000,"titleJa":"Regularized Emphatic Temporal-Difference Learning: Stability under Constant Stepsizes","points":["arXiv:2609.19170v1 Announce Type: new \nAbstract: Emphatic te...","arXiv (cs.AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9hcnhp","sourceId":"arxiv-ai","sourceName":"arXiv (cs.AI)","category":"論文","title":"BioPhys-Bridge: A Benchmark for Interdisciplinary Scientific Reasoning in Physics-Grounded Biological Research","link":"https://arxiv.org/abs/2609.19180","contentSnippet":"arXiv:2609.19180v1 Announce Type: new \nAbstract: Language models face unique challenges in analyzing interdisciplinary scientific research literature. In biophysics research, faithful answers require grounding observed data in source evidence, interpreting it through a quantitative physics model, an","pubDate":"9/18 13:00","timestamp":1789704000000,"titleJa":"BioPhys-Bridge: A Benchmark for Interdisciplinary Scientific Reasoning in Physics-Grounded Biological Research","points":["arXiv:2609.19180v1 Announce Type: new \nAbstract: Language mo...","arXiv (cs.AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9hcnhp","sourceId":"arxiv-ai","sourceName":"arXiv (cs.AI)","category":"論文","title":"What Do We Expect from LLMs? Mapping the Design of LLM Benchmarks","link":"https://arxiv.org/abs/2609.19182","contentSnippet":"arXiv:2609.19182v1 Announce Type: new \nAbstract: Benchmarks are central to how progress in large language models (LLMs) is assessed and communicated. Yet model rankings alone reveal little about how evaluation requirements themselves are changing. The expanding variety of benchmarks offers another p","pubDate":"9/18 13:00","timestamp":1789704000000,"titleJa":"What Do We Expect from LLMs? Mapping the Design of LLM Benchmarks","points":["arXiv:2609.19182v1 Announce Type: new \nAbstract: Benchmarks ...","arXiv (cs.AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9hcnhp","sourceId":"arxiv-ai","sourceName":"arXiv (cs.AI)","category":"論文","title":"Position: It is Time to Virtualize Foundation Models with a Self-evolving Operating System Layer","link":"https://arxiv.org/abs/2609.19203","contentSnippet":"arXiv:2609.19203v1 Announce Type: new \nAbstract: AI applications have shifted from single, monolithic foundation models (FM) to compound agentic systems. Yet today's stacks remain fragmented: even as protocols (e.g., MCP, A2A) ease tool/agent connectivity, each framework embeds an implicit runtime f","pubDate":"9/18 13:00","timestamp":1789704000000,"titleJa":"Position: It is Time to Virtualize Foundation Models with a Self-evolving Operating System Layer","points":["arXiv:2609.19203v1 Announce Type: new \nAbstract: AI applicat...","arXiv (cs.AI) からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9ibG9n","sourceId":"google-ai","sourceName":"Google AI","category":"海外","title":"Making global data easier to explore","link":"https://blog.google/innovation-and-ai/technology/ai/google-un-data-commons-platform/","contentSnippet":"Google and the UN system have launched the UN System Data Commons, a new open platform making global statistics accessible and easy to search.","pubDate":"9/18 05:00","timestamp":1789675200000,"titleJa":"Making global data easier to explore","points":["Google and the UN system have launched the UN System Data Co...","Google AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly93d3cu","sourceId":"mit-tech","sourceName":"MIT Tech Review","category":"論文","title":"The Download: mice with part-human brains and climate tech innovators","link":"https://www.technologyreview.com/2026/09/17/1144314/the-download-mice-part-human-brains-climate-tech-innovators/","contentSnippet":"This is today’s edition of The Download, our weekday newsletter that provides a daily dose of what’s going on in the world of technology. Meet a mouse whose brain cortex is made up of human cells Multiple cameras tracked a mouse as it wandered around a small arena. A computer charted its position an","pubDate":"9/17 21:10","timestamp":1789647000000,"titleJa":"The Download: mice with part-human brains and climate tech innovators","points":["This is today’s edition of The Download, our weekday newslet...","MIT Tech Review からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9vcGVu","sourceId":"openai","sourceName":"OpenAI","category":"海外","title":"How Cooley is accelerating IPO work with ChatGPT","link":"https://openai.com/index/cooley-gopublic","contentSnippet":"Cooley built GO Public with ChatGPT Work to bring intelligence to the IPO process, helping lawyers surface issues earlier and focus judgment where it matters most.","pubDate":"9/17 21:00","timestamp":1789646400000,"titleJa":"How Cooley is accelerating IPO work with ChatGPT","points":["Cooley built GO Public with ChatGPT Work to bring intelligen...","OpenAI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9vcGVu","sourceId":"openai","sourceName":"OpenAI","category":"海外","title":"Introducing Astra for Law","link":"https://openai.com/index/astra-for-law","contentSnippet":"OpenAI for Law brings frontier intelligence for law, custom firm workflows, connected legal data sources, and legal-grade controls for confidential client work.","pubDate":"9/17 09:00","timestamp":1789603200000,"titleJa":"Introducing Astra for Law","points":["OpenAI for Law brings frontier intelligence for law, custom ...","OpenAI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9vcGVu","sourceId":"openai","sourceName":"OpenAI","category":"海外","title":"Helping older adults use AI in everyday life","link":"https://openai.com/index/helping-older-adults-use-ai-in-everyday-life","contentSnippet":"OpenAI and AARP are bringing free, hands-on ChatGPT workshops to 1,000 older adults across 10 U.S. cities to build practical AI skills safely.","pubDate":"9/17 01:00","timestamp":1789574400000,"titleJa":"Helping older adults use AI in everyday life","points":["OpenAI and AARP are bringing free, hands-on ChatGPT workshop...","OpenAI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9vcGVu","sourceId":"openai","sourceName":"OpenAI","category":"海外","title":"Reimagining advertising with AI","link":"https://openai.com/index/reimagining-advertising-with-ai","contentSnippet":"Explore new AI-powered advertising experiences from OpenAI, including Sponsored Agents, tools for marketers, and integrations with HubSpot and Shopify.","pubDate":"9/16 22:00","timestamp":1789563600000,"titleJa":"Reimagining advertising with AI","points":["Explore new AI-powered advertising experiences from OpenAI, ...","OpenAI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9kZXZi","sourceId":"microsoft-dev","sourceName":"Microsoft Developers","category":"海外","title":"Your AI coding agent evaluation is only as good as its sandbox","link":"https://devblogs.microsoft.com/blog/your-ai-coding-agent-evaluation-is-only-as-good-as-its-sandbox/","contentSnippet":"Your AI coding agent passed the eval. But did the model know the answer, or did it find it somewhere on your machine? A correct answer can still invalidate your measurement.\nThe post Your AI coding agent evaluation is only as good as its sandbox appeared first on Microsoft for Developers.","pubDate":"9/16 18:09","timestamp":1789549791000,"titleJa":"Your AI coding agent evaluation is only as good as its sandbox","points":["Your AI coding agent passed the eval. But did the model know...","Microsoft Developers からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9odWdn","sourceId":"huggingface","sourceName":"Hugging Face","category":"海外","title":"Your Agent Aced the Task. Will It Do It Again?","link":"https://huggingface.co/blog/ibm-research/altk-evolve-consistency","contentSnippet":"","pubDate":"9/16 01:00","timestamp":1789488044000,"titleJa":"Your Agent Aced the Task. Will It Do It Again?","points":["新着記事です","Hugging Face からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9kZXZi","sourceId":"microsoft-dev","sourceName":"Microsoft Developers","category":"海外","title":"Build an interview coach app with the GitHub Copilot SDK","link":"https://devblogs.microsoft.com/blog/build-an-interview-coach-app-with-the-github-copilot-sdk/","contentSnippet":"An interview coach has to do more than ask questions. It needs to read a resume, follow up on an incomplete answer, and save enough context to give useful feedback at the end. Some of that work is conversation. Some of it requires calling an application service. The GitHub Copilot SDK lets you use t","pubDate":"9/16 01:00","timestamp":1789488011000,"titleJa":"Build an interview coach app with the GitHub Copilot SDK","points":["An interview coach has to do more than ask questions. It nee...","Microsoft Developers からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9ibG9n","sourceId":"google-ai","sourceName":"Google AI","category":"海外","title":"AI for Societal Impact","link":"https://blog.google/innovation-and-ai/technology/ai/ai-for-societal-impact/","contentSnippet":"Explore this collection to see how experts and local leaders are using AI breakthroughs to ensure everyone can share the opportunity of AI.","pubDate":"9/16 01:00","timestamp":1789488000000,"titleJa":"AI for Societal Impact","points":["Explore this collection to see how experts and local leaders...","Google AI からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9odWdn","sourceId":"huggingface","sourceName":"Hugging Face","category":"海外","title":"Async GRPO with LoRA across HF Jobs: a bucket, a proxy, and no NCCL","link":"https://huggingface.co/blog/asyncgrpo-lora-hfjobs","contentSnippet":"","pubDate":"9/10 09:00","timestamp":1788998400000,"titleJa":"Async GRPO with LoRA across HF Jobs: a bucket, a proxy, and no NCCL","points":["新着記事です","Hugging Face からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9odWdn","sourceId":"huggingface","sourceName":"Hugging Face","category":"海外","title":"Rebuilding AUTOMATIC1111 with Gradio Workflow","link":"https://huggingface.co/blog/gradio-workflow-1111","contentSnippet":"","pubDate":"9/10 09:00","timestamp":1788998400000,"titleJa":"Rebuilding AUTOMATIC1111 with Gradio Workflow","points":["新着記事です","Hugging Face からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9kZXZi","sourceId":"microsoft-dev","sourceName":"Microsoft Developers","category":"海外","title":"Your work might not need the smartest model","link":"https://devblogs.microsoft.com/blog/your-work-might-not-need-the-smartest-model/","contentSnippet":"The smartest model can cost five times more and deliver the same result, or even a worse one. See how evaluating your own work helps you get more value from your agent budget.\nThe post Your work might not need the smartest model appeared first on Microsoft for Developers.","pubDate":"9/9 18:14","timestamp":1788945244000,"titleJa":"Your work might not need the smartest model","points":["The smartest model can cost five times more and deliver the ...","Microsoft Developers からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9odWdn","sourceId":"huggingface","sourceName":"Hugging Face","category":"海外","title":"Safety for Whom? Refusing the Right Subset of a Topic, Not the Whole Topic","link":"https://huggingface.co/blog/MultiverseComputingCAI/safety-for-whom","contentSnippet":"","pubDate":"9/8 23:23","timestamp":1788877387000,"titleJa":"Safety for Whom? Refusing the Right Subset of a Topic, Not the Whole Topic","points":["新着記事です","Hugging Face からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false},{"id":"aHR0cHM6Ly9kZXZi","sourceId":"microsoft-dev","sourceName":"Microsoft Developers","category":"海外","title":"Start here: Azure SQL Foundations series","link":"https://devblogs.microsoft.com/blog/start-here-azure-sql-foundations-series/","contentSnippet":"Most developers I talk to aren’t asking whether Azure SQL Database can handle their next app. They’re asking where to start when it comes to modernization, migration, and AI in the database. If you’re reading this, you’re probably in a similar boat: you’ve got an existing schema or databases, a scal","pubDate":"8/26 01:00","timestamp":1787673618000,"titleJa":"Start here: Azure SQL Foundations series","points":["Most developers I talk to aren’t asking whether Azure SQL Da...","Microsoft Developers からの最新アップデート","詳細は元記事リンクよりご確認ください"],"stars":3,"isTop10":false}]}
+  </script>
+
+  <script>
+    // パスコード管理 (初期パスコード: 1234)
+    const CORRECT_PIN = "1234";
+    let currentPin = "";
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < currentPin.length) {
+          dot.classList.add('filled');
+        } else {
+          dot.classList.remove('filled');
+        }
+      }
+    }
+
+    function inputDigit(digit) {
+      if (currentPin.length < 4) {
+        currentPin += digit;
+        updatePinDots();
+        if (currentPin.length === 4) {
+          setTimeout(verifyPin, 150);
+        }
+      }
+    }
+
+    function deleteDigit() {
+      if (currentPin.length > 0) {
+        currentPin = currentPin.slice(0, -1);
+        updatePinDots();
+      }
+    }
+
+    function clearDigits() {
+      currentPin = "";
+      updatePinDots();
+    }
+
+    function verifyPin() {
+      if (currentPin === CORRECT_PIN) {
+        document.getElementById('lock-screen').style.display = 'none';
+        sessionStorage.setItem('ai_news_unlocked', 'true');
+        showToast('🔓 ロック解除しました');
+      } else {
+        const box = document.getElementById('lock-box');
+        box.classList.add('shake');
+        showToast('❌ パスコードが違います');
+        setTimeout(() => {
+          box.classList.remove('shake');
+          clearDigits();
+        }, 500);
+      }
+    }
+
+    function lockApp() {
+      sessionStorage.removeItem('ai_news_unlocked');
+      clearDigits();
+      document.getElementById('lock-screen').style.display = 'flex';
+    }
+
+    if (sessionStorage.getItem('ai_news_unlocked') === 'true') {
+      document.getElementById('lock-screen').style.display = 'none';
+    }
+
+    // ニュースアプリ コアロジック
+    const rawData = JSON.parse(document.getElementById('news-data-json').textContent);
+    const allArticles = rawData.articles || [];
+
+    // LocalStorage既読管理
+    let readIds = new Set(JSON.parse(localStorage.getItem('ai_news_read_ids') || '[]'));
+
+    let currentTab = 'top10'; // top10, unread, read, or category/source
+
+    function saveReadState() {
+      localStorage.setItem('ai_news_read_ids', JSON.stringify(Array.from(readIds)));
+      renderTabs();
+      renderArticles();
+    }
+
+    function toggleRead(id, event) {
+      if (event) event.stopPropagation();
+      if (readIds.has(id)) {
+        readIds.delete(id);
+        showToast('未読に戻しました');
+      } else {
+        readIds.add(id);
+        showToast('既読にしました');
+      }
+      saveReadState();
+    }
+
+    function markAllRead() {
+      if (confirm('表示中の未読ニュースをすべて既読にしますか？')) {
+        allArticles.forEach(a => readIds.add(a.id));
+        saveReadState();
+        showToast('すべて既読にしました');
+      }
+    }
+
+    function getCategories() {
+      const cats = new Set();
+      allArticles.forEach(a => {
+        if (a.category) cats.add(a.category);
+      });
+      return Array.from(cats);
+    }
+
+    function renderTabs() {
+      const tabsBar = document.getElementById('tabs-bar');
+      const unreadCount = allArticles.filter(a => !readIds.has(a.id)).length;
+      const readCount = readIds.size;
+      const top10UnreadCount = allArticles.filter(a => a.isTop10 && !readIds.has(a.id)).length;
+
+      const tabs = [
+        { id: 'top10', label: '🔥 注目10選', count: top10UnreadCount },
+        { id: 'unread', label: '📩 未読', count: unreadCount },
+        { id: 'read', label: '✅ 既読', count: readCount }
+      ];
+
+      // カテゴリタブ
+      getCategories().forEach(cat => {
+        const catUnread = allArticles.filter(a => a.category === cat && !readIds.has(a.id)).length;
+        tabs.push({ id: `cat_${cat}`, label: cat, count: catUnread });
+      });
+
+      tabsBar.innerHTML = tabs.map(tab => `
+        <button class="tab-btn ${currentTab === tab.id ? 'active' : ''}" onclick="switchTab('${tab.id}')">
+          ${tab.label}
+          <span class="badge-count">${tab.count}</span>
+        </button>
+      `).join('');
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      renderTabs();
+      renderArticles();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderArticles() {
+      const container = document.getElementById('news-container');
+      let filtered = [];
+
+      if (currentTab === 'top10') {
+        filtered = allArticles.filter(a => a.isTop10);
+      } else if (currentTab === 'unread') {
+        filtered = allArticles.filter(a => !readIds.has(a.id));
+      } else if (currentTab === 'read') {
+        filtered = allArticles.filter(a => readIds.has(a.id));
+      } else if (currentTab.startsWith('cat_')) {
+        const cat = currentTab.replace('cat_', '');
+        filtered = allArticles.filter(a => a.category === cat);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">✨</div>
+            <h3>記事がありません</h3>
+            <p>すべてのニュースを読み終えたか、まだ新着記事がありません。</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(a => {
+        const isRead = readIds.has(a.id);
+        const starStr = '★'.repeat(a.stars || 3) + '☆'.repeat(5 - (a.stars || 3));
+        const summaryHtml = a.points && a.points.length > 0
+          ? `<ul>${a.points.map(p => `<li>${p}</li>`).join('')}</ul>`
+          : `<p>${a.summary || '要約はありません'}</p>`;
+
+        return `
+          <article class="news-card ${isRead ? 'read' : ''}" id="card-${a.id}">
+            <div class="card-meta">
+              <div class="meta-left">
+                <span class="source-tag">${a.sourceName}</span>
+                <span class="cat-badge ${a.category}">${a.category}</span>
+                <span class="stars" title="注目度 ${a.stars}/5">${starStr}</span>
+              </div>
+              <span class="news-date">${a.pubDate || ''}</span>
+            </div>
+
+            <h2 class="news-title">
+              <a href="${a.link}" target="_blank" rel="noopener noreferrer" onclick="onArticleClick('${a.id}')">
+                ${a.titleJa || a.title}
+              </a>
+            </h2>
+
+            <div class="summary-box">
+              ${summaryHtml}
+            </div>
+
+            <div class="card-footer">
+              <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="source-tag" style="text-decoration:none;" onclick="onArticleClick('${a.id}')">
+                元記事を読む ↗
+              </a>
+              <button class="read-toggle-btn" onclick="toggleRead('${a.id}', event)">
+                ${isRead ? '✓ 既読済み' : '未読にする'}
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function onArticleClick(id) {
+      if (!readIds.has(id)) {
+        readIds.add(id);
+        saveReadState();
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // 初期描画
+    renderTabs();
+    renderArticles();
+  </script>
+</body>
+</html>

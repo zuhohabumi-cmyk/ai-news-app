@@ -1,0 +1,731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>最新AI系ニュースまとめ</title>
+  <meta name="description" content="毎朝自動更新される自分専用の最新AIニュースまとめ">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AIニュース">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root {
+      --bg: #0b0f19;
+      --surface: #151d2f;
+      --surface-hover: #1e293b;
+      --border: #243048;
+      --primary: #38bdf8;
+      --primary-gradient: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --star: #fbbf24;
+      --badge-japan: #ec4899;
+      --badge-overseas: #06b6d4;
+      --badge-paper: #a855f7;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    /* パスコード ロック画面 */
+    #lock-screen {
+      position: fixed;
+      inset: 0;
+      background: rgba(11, 15, 25, 0.98);
+      backdrop-filter: blur(12px);
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .lock-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    }
+
+    .lock-icon {
+      font-size: 40px;
+      margin-bottom: 12px;
+    }
+
+    .lock-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .lock-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+    }
+
+    .pin-display {
+      display: flex;
+      justify-content: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .pin-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      border: 2px solid var(--border);
+      transition: all 0.2s;
+    }
+
+    .pin-dot.filled {
+      background: var(--primary);
+      border-color: var(--primary);
+      box-shadow: 0 0 12px var(--primary);
+    }
+
+    .keypad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      max-width: 260px;
+      margin: 0 auto;
+    }
+
+    .key-btn {
+      background: #1e293b;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 64px;
+      height: 64px;
+      margin: 0 auto;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.1s, transform 0.1s;
+    }
+
+    .key-btn:active {
+      background: var(--primary);
+      color: #0b0f19;
+      transform: scale(0.92);
+    }
+
+    .shake {
+      animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    }
+
+    @keyframes shake {
+      10%, 90% { transform: translate3d(-2px, 0, 0); }
+      20%, 80% { transform: translate3d(4px, 0, 0); }
+      30%, 50%, 70% { transform: translate3d(-6px, 0, 0); }
+      40%, 60% { transform: translate3d(6px, 0, 0); }
+    }
+
+    /* ヘッダー */
+    header {
+      position: sticky;
+      top: 0;
+      background: rgba(11, 15, 25, 0.92);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+      border-bottom: 1px solid var(--border);
+      padding: 14px 18px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+    }
+
+    h1 {
+      font-size: 18px;
+      font-weight: 800;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.02em;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 6px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .update-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* 横スクロールタブバー */
+    .tabs-container {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding: 4px 0 2px 0;
+      scrollbar-width: none;
+    }
+
+    .tabs-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .tab-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: var(--primary-gradient);
+      color: #0b0f19;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(56, 189, 248, 0.3);
+    }
+
+    .badge-count {
+      background: rgba(0, 0, 0, 0.25);
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+    .tab-btn.active .badge-count {
+      background: rgba(0, 0, 0, 0.35);
+      color: #fff;
+    }
+
+    /* メインコンテンツ */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .news-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .news-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      position: relative;
+      transition: border-color 0.2s, transform 0.15s;
+    }
+
+    .news-card:hover {
+      border-color: #38bdf8;
+    }
+
+    .news-card.read {
+      opacity: 0.65;
+    }
+
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .meta-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .source-tag {
+      font-size: 12px;
+      font-weight: 600;
+      color: #38bdf8;
+    }
+
+    .cat-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      text-transform: uppercase;
+    }
+
+    .cat-badge.国内 {
+      background: rgba(236, 72, 153, 0.15);
+      color: var(--badge-japan);
+      border: 1px solid rgba(236, 72, 153, 0.3);
+    }
+
+    .cat-badge.海外 {
+      background: rgba(6, 182, 212, 0.15);
+      color: var(--badge-overseas);
+      border: 1px solid rgba(6, 182, 212, 0.3);
+    }
+
+    .cat-badge.論文 {
+      background: rgba(168, 85, 247, 0.15);
+      color: var(--badge-paper);
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    .stars {
+      color: var(--star);
+      font-size: 13px;
+      letter-spacing: 1px;
+    }
+
+    .news-title {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .news-title a {
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .news-title a:hover {
+      color: var(--primary);
+    }
+
+    .summary-box {
+      background: rgba(11, 15, 25, 0.6);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .summary-box ul {
+      padding-left: 18px;
+    }
+
+    .card-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 6px;
+    }
+
+    .news-date {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .read-toggle-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .read-toggle-btn:hover {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .news-card.read .read-toggle-btn {
+      border-color: #10b981;
+      color: #10b981;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    /* スナックバー / 通知 */
+    #toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 10px 20px;
+      border-radius: 20px;
+      font-size: 13px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+      z-index: 1000;
+    }
+
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- パスコード ロック画面 (動画の仕様を再現) -->
+  <div id="lock-screen">
+    <div class="lock-box" id="lock-box">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">最新AI系ニュースまとめ</div>
+      <div class="lock-desc">4桁のパスコードを入力してください</div>
+      
+      <div class="pin-display">
+        <div class="pin-dot" id="dot-0"></div>
+        <div class="pin-dot" id="dot-1"></div>
+        <div class="pin-dot" id="dot-2"></div>
+        <div class="pin-dot" id="dot-3"></div>
+      </div>
+
+      <div class="keypad">
+        <button class="key-btn" onclick="inputDigit('1')">1</button>
+        <button class="key-btn" onclick="inputDigit('2')">2</button>
+        <button class="key-btn" onclick="inputDigit('3')">3</button>
+        <button class="key-btn" onclick="inputDigit('4')">4</button>
+        <button class="key-btn" onclick="inputDigit('5')">5</button>
+        <button class="key-btn" onclick="inputDigit('6')">6</button>
+        <button class="key-btn" onclick="inputDigit('7')">7</button>
+        <button class="key-btn" onclick="inputDigit('8')">8</button>
+        <button class="key-btn" onclick="inputDigit('9')">9</button>
+        <button class="key-btn" style="font-size:14px;" onclick="clearDigits()">クリア</button>
+        <button class="key-btn" onclick="inputDigit('0')">0</button>
+        <button class="key-btn" style="font-size:18px;" onclick="deleteDigit()">⌫</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- メイン画面 -->
+  <header>
+    <div class="header-top">
+      <div class="logo-area">
+        <img src="icon-192.png" alt="Logo" class="logo-icon">
+        <div>
+          <h1>最新AI系ニュースまとめ</h1>
+          <div class="update-time">最終更新: {{UPDATED_AT}}</div>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" onclick="lockApp()" title="ロック">🔒</button>
+        <button class="icon-btn" onclick="markAllRead()" title="すべて既読">一括既読</button>
+      </div>
+    </div>
+
+    <div class="tabs-container" id="tabs-bar">
+      <!-- JSで動的生成 -->
+    </div>
+  </header>
+
+  <main>
+    <div class="news-list" id="news-container">
+      <!-- 記事カード一覧 -->
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <!-- ニュースデータ埋め込み -->
+  <script id="news-data-json" type="application/json">
+    {{NEWS_DATA_JSON}}
+  </script>
+
+  <script>
+    // パスコード管理 (初期パスコード: 1234)
+    const CORRECT_PIN = "1234";
+    let currentPin = "";
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById(`dot-${i}`);
+        if (i < currentPin.length) {
+          dot.classList.add('filled');
+        } else {
+          dot.classList.remove('filled');
+        }
+      }
+    }
+
+    function inputDigit(digit) {
+      if (currentPin.length < 4) {
+        currentPin += digit;
+        updatePinDots();
+        if (currentPin.length === 4) {
+          setTimeout(verifyPin, 150);
+        }
+      }
+    }
+
+    function deleteDigit() {
+      if (currentPin.length > 0) {
+        currentPin = currentPin.slice(0, -1);
+        updatePinDots();
+      }
+    }
+
+    function clearDigits() {
+      currentPin = "";
+      updatePinDots();
+    }
+
+    function verifyPin() {
+      if (currentPin === CORRECT_PIN) {
+        document.getElementById('lock-screen').style.display = 'none';
+        sessionStorage.setItem('ai_news_unlocked', 'true');
+        showToast('🔓 ロック解除しました');
+      } else {
+        const box = document.getElementById('lock-box');
+        box.classList.add('shake');
+        showToast('❌ パスコードが違います');
+        setTimeout(() => {
+          box.classList.remove('shake');
+          clearDigits();
+        }, 500);
+      }
+    }
+
+    function lockApp() {
+      sessionStorage.removeItem('ai_news_unlocked');
+      clearDigits();
+      document.getElementById('lock-screen').style.display = 'flex';
+    }
+
+    if (sessionStorage.getItem('ai_news_unlocked') === 'true') {
+      document.getElementById('lock-screen').style.display = 'none';
+    }
+
+    // ニュースアプリ コアロジック
+    const rawData = JSON.parse(document.getElementById('news-data-json').textContent);
+    const allArticles = rawData.articles || [];
+
+    // LocalStorage既読管理
+    let readIds = new Set(JSON.parse(localStorage.getItem('ai_news_read_ids') || '[]'));
+
+    let currentTab = 'top10'; // top10, unread, read, or category/source
+
+    function saveReadState() {
+      localStorage.setItem('ai_news_read_ids', JSON.stringify(Array.from(readIds)));
+      renderTabs();
+      renderArticles();
+    }
+
+    function toggleRead(id, event) {
+      if (event) event.stopPropagation();
+      if (readIds.has(id)) {
+        readIds.delete(id);
+        showToast('未読に戻しました');
+      } else {
+        readIds.add(id);
+        showToast('既読にしました');
+      }
+      saveReadState();
+    }
+
+    function markAllRead() {
+      if (confirm('表示中の未読ニュースをすべて既読にしますか？')) {
+        allArticles.forEach(a => readIds.add(a.id));
+        saveReadState();
+        showToast('すべて既読にしました');
+      }
+    }
+
+    function getCategories() {
+      const cats = new Set();
+      allArticles.forEach(a => {
+        if (a.category) cats.add(a.category);
+      });
+      return Array.from(cats);
+    }
+
+    function renderTabs() {
+      const tabsBar = document.getElementById('tabs-bar');
+      const unreadCount = allArticles.filter(a => !readIds.has(a.id)).length;
+      const readCount = readIds.size;
+      const top10UnreadCount = allArticles.filter(a => a.isTop10 && !readIds.has(a.id)).length;
+
+      const tabs = [
+        { id: 'top10', label: '🔥 注目10選', count: top10UnreadCount },
+        { id: 'unread', label: '📩 未読', count: unreadCount },
+        { id: 'read', label: '✅ 既読', count: readCount }
+      ];
+
+      // カテゴリタブ
+      getCategories().forEach(cat => {
+        const catUnread = allArticles.filter(a => a.category === cat && !readIds.has(a.id)).length;
+        tabs.push({ id: `cat_${cat}`, label: cat, count: catUnread });
+      });
+
+      tabsBar.innerHTML = tabs.map(tab => `
+        <button class="tab-btn ${currentTab === tab.id ? 'active' : ''}" onclick="switchTab('${tab.id}')">
+          ${tab.label}
+          <span class="badge-count">${tab.count}</span>
+        </button>
+      `).join('');
+    }
+
+    function switchTab(tabId) {
+      currentTab = tabId;
+      renderTabs();
+      renderArticles();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderArticles() {
+      const container = document.getElementById('news-container');
+      let filtered = [];
+
+      if (currentTab === 'top10') {
+        filtered = allArticles.filter(a => a.isTop10);
+      } else if (currentTab === 'unread') {
+        filtered = allArticles.filter(a => !readIds.has(a.id));
+      } else if (currentTab === 'read') {
+        filtered = allArticles.filter(a => readIds.has(a.id));
+      } else if (currentTab.startsWith('cat_')) {
+        const cat = currentTab.replace('cat_', '');
+        filtered = allArticles.filter(a => a.category === cat);
+      }
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">✨</div>
+            <h3>記事がありません</h3>
+            <p>すべてのニュースを読み終えたか、まだ新着記事がありません。</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = filtered.map(a => {
+        const isRead = readIds.has(a.id);
+        const starStr = '★'.repeat(a.stars || 3) + '☆'.repeat(5 - (a.stars || 3));
+        const summaryHtml = a.points && a.points.length > 0
+          ? `<ul>${a.points.map(p => `<li>${p}</li>`).join('')}</ul>`
+          : `<p>${a.summary || '要約はありません'}</p>`;
+
+        return `
+          <article class="news-card ${isRead ? 'read' : ''}" id="card-${a.id}">
+            <div class="card-meta">
+              <div class="meta-left">
+                <span class="source-tag">${a.sourceName}</span>
+                <span class="cat-badge ${a.category}">${a.category}</span>
+                <span class="stars" title="注目度 ${a.stars}/5">${starStr}</span>
+              </div>
+              <span class="news-date">${a.pubDate || ''}</span>
+            </div>
+
+            <h2 class="news-title">
+              <a href="${a.link}" target="_blank" rel="noopener noreferrer" onclick="onArticleClick('${a.id}')">
+                ${a.titleJa || a.title}
+              </a>
+            </h2>
+
+            <div class="summary-box">
+              ${summaryHtml}
+            </div>
+
+            <div class="card-footer">
+              <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="source-tag" style="text-decoration:none;" onclick="onArticleClick('${a.id}')">
+                元記事を読む ↗
+              </a>
+              <button class="read-toggle-btn" onclick="toggleRead('${a.id}', event)">
+                ${isRead ? '✓ 既読済み' : '未読にする'}
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function onArticleClick(id) {
+      if (!readIds.has(id)) {
+        readIds.add(id);
+        saveReadState();
+      }
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2000);
+    }
+
+    // 初期描画
+    renderTabs();
+    renderArticles();
+  </script>
+</body>
+</html>

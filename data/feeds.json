@@ -1,0 +1,74 @@
+[
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "category": "海外",
+    "url": "https://openai.com/news/rss.xml"
+  },
+  {
+    "id": "google-ai",
+    "name": "Google AI",
+    "category": "海外",
+    "url": "https://blog.google/technology/ai/rss/"
+  },
+  {
+    "id": "techcrunch-ai",
+    "name": "TechCrunch AI",
+    "category": "海外",
+    "url": "https://techcrunch.com/category/artificial-intelligence/feed/"
+  },
+  {
+    "id": "theverge-ai",
+    "name": "The Verge AI",
+    "category": "海外",
+    "url": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml"
+  },
+  {
+    "id": "mit-tech",
+    "name": "MIT Tech Review",
+    "category": "論文",
+    "url": "https://www.technologyreview.com/feed/"
+  },
+  {
+    "id": "microsoft-dev",
+    "name": "Microsoft Developers",
+    "category": "海外",
+    "url": "https://devblogs.microsoft.com/feed/"
+  },
+  {
+    "id": "itmedia-ai",
+    "name": "ITmedia AI+",
+    "category": "国内",
+    "url": "https://rss.itmedia.co.jp/rss/2.0/aiplus.xml"
+  },
+  {
+    "id": "gizmodo",
+    "name": "ギズモード・ジャパン",
+    "category": "国内",
+    "url": "https://www.gizmodo.jp/index.xml"
+  },
+  {
+    "id": "zenn-ai",
+    "name": "Zenn (AI)",
+    "category": "国内",
+    "url": "https://zenn.dev/topics/ai/feed"
+  },
+  {
+    "id": "hacker-news",
+    "name": "Hacker News (AI)",
+    "category": "海外",
+    "url": "https://hnrss.org/newest?q=AI+OR+LLM+OR+GPT&points=50"
+  },
+  {
+    "id": "huggingface",
+    "name": "Hugging Face",
+    "category": "海外",
+    "url": "https://huggingface.co/blog/feed.xml"
+  },
+  {
+    "id": "arxiv-ai",
+    "name": "arXiv (cs.AI)",
+    "category": "論文",
+    "url": "https://export.arxiv.org/rss/cs.AI"
+  }
+]
