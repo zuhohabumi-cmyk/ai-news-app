@@ -126,3 +126,4 @@ fs.writeFileSync(path.join(publicDir, 'icon-512.png'), icon512);
 fs.writeFileSync(path.join(publicDir, 'apple-touch-icon.png'), icon192);
 
 console.log('Icons generated successfully in public/');
+

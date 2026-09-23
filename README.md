@@ -1,5 +1,11 @@
 # 最新AI系ニュースまとめアプリ (AI Daily News)
 
+> このアプリは親リポジトリの `apps/ai_daily_news/` で管理します。ここで `git init` は実行しません。公開時はこのアプリだけを既存のGitHub Pagesリポジトリへ分離して送ります。
+
+> APIキーはローカル専用の `.env` に設定します。実キーを含む設定ファイルはコミットしません。
+
+> GitHub Pagesの更新と毎朝5:30（JST）の更新は [`.github/workflows/daily_update.yml`](.github/workflows/daily_update.yml) が行います。GitHub Secretsの `GEMINI_API_KEY` は既存リポジトリ側で管理します。
+
 毎朝自動更新され、通勤中や隙間時間にスマホからサクッと読める自分専用のAIニュースまとめアプリです。
 
 ---
@@ -24,15 +30,24 @@
 4. 表示された `AIza...` で始まる文字列（APIキー）をコピーします。
 
 ### 2. ローカルでのテスト実行
-1. プロジェクトルートに `.env` ファイルを作成し、以下のようにAPIキーを記載します：
+1. `apps/ai_daily_news/` で依存関係を復元します：
+   ```powershell
+   npm.cmd ci
+   ```
+2. 必要な場合だけ、プロジェクトルートに `.env` ファイルを作成し、以下のようにAPIキーを記載します：
    ```env
    GEMINI_API_KEY=取得したAPIキー
    ```
-2. ビルドコマンドを実行します：
+3. ビルドコマンドを実行します。APIキーがない場合も、RSS取得結果をフォールバック表示して確認できます：
    ```bash
-   npm run build
+   npm.cmd run build
    ```
-3. `public/index.html` が生成されます。ブラウザで開いて確認できます。
+4. ローカル閲覧サーバーを起動し、表示されたURLをブラウザで開きます：
+   ```powershell
+   npm.cmd run serve
+   ```
+
+`public/index.html` が生成されます。既定のURLは `http://127.0.0.1:4173` です。
 
 ---
 
